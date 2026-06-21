@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSRA Stage Demo — Design Specs</title>
+<style>
+  :root {
+    --brand-green: #16a34a;
+    --brand-green-light: #22c55e;
+    --brand-green-dim: #dcfce7;
+    --brand-dark: #0f172a;
+    --brand-surface: #f8fafc;
+    --brand-border: #e2e8f0;
+    --brand-muted: #64748b;
+    --brand-amber: #f59e0b;
+    --brand-blue: #3b82f6;
+    --brand-purple: #8b5cf6;
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #0f172a; color: white; }
+  .nav { padding: 16px 32px; background: rgba(15,23,42,0.9); backdrop-filter: blur(12px); border-bottom: 1px solid #1e293b; position: sticky; top: 0; z-index: 100; display: flex; align-items: center; gap: 12px; }
+  .nav-logo { font-size: 18px; font-weight: 700; color: #22c55e; }
+  .nav-title { font-size: 14px; color: #94a3b8; }
+  .frame-list { display: flex; gap: 12px; padding: 0 32px; margin-left: auto; }
+  .frame-link { font-size: 12px; color: #64748b; text-decoration: none; padding: 4px 10px; border-radius: 6px; border: 1px solid #334155; transition: all 0.15s; }
+  .frame-link:hover { color: #22c55e; border-color: #22c55e; }
+  .hero { padding: 48px 32px 32px; text-align: center; }
+  .hero h1 { font-size: 28px; font-weight: 700; }
+  .hero p { color: #94a3b8; margin-top: 8px; font-size: 15px; }
+  .frames-grid { display: grid; gap: 24px; padding: 0 32px 64px; }
+  .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #22c55e; margin-bottom: 8px; }
+  .frame-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
+  .frame-title { font-size: 20px; font-weight: 700; }
+  .frame-step { font-size: 12px; color: #64748b; }
+  .frame-wrapper { background: #1e293b; border-radius: 16px; overflow: hidden; border: 1px solid #334155; }
+  .frame-chrome { background: #0f172a; padding: 10px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #1e293b; }
+  .chrome-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .chrome-url { flex: 1; background: #1e293b; border-radius: 6px; padding: 4px 12px; font-size: 11px; color: #475569; text-align: center; }
+  .frame-content { position: relative; }
+  .annotation { background: #0f172a; border-top: 1px solid #1e293b; padding: 20px 24px; }
+  .annotation h4 { font-size: 12px; font-weight: 600; color: #22c55e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+  .annotation ul { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+  .annotation li { font-size: 12px; color: #94a3b8; background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 4px 10px; }
+  .annotation li::before { content: "→ "; color: #22c55e; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav-logo">Soapbox</span>
+  <span class="nav-title">RSRA Stage Demo — Design Specs v1.0</span>
+  <div class="frame-list">
+    <a href="frame1-drag-drop.html" class="frame-link">1 · Drag Drop</a>
+    <a href="frame2-map-footprint.html" class="frame-link">2 · Map</a>
+    <a href="frame3-pipeline.html" class="frame-link">3 · Pipeline</a>
+    <a href="frame4-artifact.html" class="frame-link">4 · Artifact</a>
+    <a href="frame5-export.html" class="frame-link">5 · Export</a>
+  </div>
+</nav>
+<div class="hero">
+  <h1>RSRA Stage Demo · Visual Design</h1>
+  <p>5 on-stage payoff moments — polished, progressive, impressive</p>
+</div>
+<div class="frames-grid">
+  <p style="color:#94a3b8; text-align:center; font-size:14px;">Open individual frame files below for full interactive prototypes:</p>
+  <div style="display:grid; grid-template-columns: repeat(5,1fr); gap:16px; padding:0 0 32px;">
+    <a href="frame1-drag-drop.html" style="text-decoration:none; background:#1e293b; border:1px solid #334155; border-radius:12px; padding:20px; text-align:center; color:white; transition:all 0.15s;" onmouseover="this.style.borderColor='#22c55e'" onmouseout="this.style.borderColor='#334155'">
+      <div style="font-size:28px; margin-bottom:8px;">📄</div>
+      <div style="font-size:13px; font-weight:600;">Drag & Drop</div>
+      <div style="font-size:11px; color:#64748b; margin-top:4px;">Step 1</div>
+    </a>
+    <a href="frame2-map-footprint.html" style="text-decoration:none; background:#1e293b; border:1px solid #334155; border-radius:12px; padding:20px; text-align:center; color:white; transition:all 0.15s;" onmouseover="this.style.borderColor='#22c55e'" onmouseout="this.style.borderColor='#334155'">
+      <div style="font-size:28px; margin-bottom:8px;">🗺</div>
+      <div style="font-size:13px; font-weight:600;">Map & Footprint</div>
+      <div style="font-size:11px; color:#64748b; margin-top:4px;">Steps 2–3</div>
+    </a>
+    <a href="frame3-pipeline.html" style="text-decoration:none; background:#1e293b; border:1px solid #334155; border-radius:12px; padding:20px; text-align:center; color:white; transition:all 0.15s;" onmouseover="this.style.borderColor='#22c55e'" onmouseout="this.style.borderColor='#334155'">
+      <div style="font-size:28px; margin-bottom:8px;">⚡</div>
+      <div style="font-size:13px; font-weight:600;">Pipeline Progress</div>
+      <div style="font-size:11px; color:#64748b; margin-top:4px;">Steps 4–7</div>
+    </a>
+    <a href="frame4-artifact.html" style="text-decoration:none; background:#1e293b; border:1px solid #334155; border-radius:12px; padding:20px; text-align:center; color:white; transition:all 0.15s;" onmouseover="this.style.borderColor='#22c55e'" onmouseout="this.style.borderColor='#334155'">
+      <div style="font-size:28px; margin-bottom:8px;">📊</div>
+      <div style="font-size:13px; font-weight:600;">RSRA Artifact</div>
+      <div style="font-size:11px; color:#64748b; margin-top:4px;">Steps 7–9</div>
+    </a>
+    <a href="frame5-export.html" style="text-decoration:none; background:#1e293b; border:1px solid #334155; border-radius:12px; padding:20px; text-align:center; color:white; transition:all 0.15s;" onmouseover="this.style.borderColor='#22c55e'" onmouseout="this.style.borderColor='#334155'">
+      <div style="font-size:28px; margin-bottom:8px;">📤</div>
+      <div style="font-size:13px; font-weight:600;">Export</div>
+      <div style="font-size:11px; color:#64748b; margin-top:4px;">Step 10</div>
+    </a>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frame 5 · Export Assessment — RSRA Demo</title>
+<style>
+/* ── Reset & base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:        #0f172a;
+  --surface:   #1e293b;
+  --surface2:  #263347;
+  --border:    #334155;
+  --green:     #22c55e;
+  --green-dim: rgba(34,197,94,0.12);
+  --green-glow:rgba(34,197,94,0.25);
+  --muted:     #94a3b8;
+  --faint:     #64748b;
+  --white:     #ffffff;
+  --radius:    12px;
+  --modal-w:   480px;
+}
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--white);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Browser chrome ── */
+.browser-chrome {
+  background: #0f172a;
+  border-bottom: 1px solid #1e293b;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.chrome-dots { display: flex; gap: 6px; }
+.chrome-dots span {
+  width: 12px; height: 12px; border-radius: 50%;
+  display: block;
+}
+.dot-r { background: #ef4444; }
+.dot-y { background: #f59e0b; }
+.dot-g { background: #22c55e; }
+.chrome-url {
+  flex: 1; background: #1e293b; border-radius: 8px;
+  padding: 5px 14px; font-size: 12px; color: #475569;
+  text-align: center; max-width: 480px; margin: 0 auto;
+}
+
+/* ── Top nav ── */
+.top-nav {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 24px;
+  background: rgba(15,23,42,0.9);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  position: relative; z-index: 10;
+}
+.nav-logo { font-size: 16px; font-weight: 700; color: var(--green); }
+.nav-sep  { color: var(--border); }
+.nav-title { font-size: 13px; color: var(--muted); }
+.nav-links { margin-left: auto; display: flex; gap: 8px; }
+.nav-link {
+  font-size: 11px; color: var(--faint); text-decoration: none;
+  padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+.nav-link:hover { color: var(--green); border-color: var(--green); }
+.nav-link.active { color: var(--green); border-color: var(--green); background: var(--green-dim); }
+
+/* ── State tabs ── */
+.state-tabs {
+  display: flex; align-items: center; gap: 0;
+  padding: 14px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.state-tabs-label { font-size: 11px; color: var(--faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-right: 12px; }
+.tab-btn {
+  font-size: 12px; font-weight: 500; color: var(--muted);
+  padding: 5px 14px; border: 1px solid var(--border);
+  background: transparent; cursor: pointer; transition: all 0.15s;
+  white-space: nowrap;
+}
+.tab-btn:first-of-type { border-radius: 8px 0 0 8px; }
+.tab-btn:last-of-type  { border-radius: 0 8px 8px 0; }
+.tab-btn + .tab-btn { border-left: none; }
+.tab-btn.active {
+  background: var(--green); color: #fff; border-color: var(--green);
+}
+.tab-hint { font-size: 11px; color: var(--faint); margin-left: 14px; }
+
+/* ── Stage wrapper (the blurred background + modal) ── */
+.stage {
+  position: relative;
+  min-height: calc(100vh - 120px);
+  overflow: hidden;
+}
+
+/* ── Artifact background (frame 4 replica, blurred) ── */
+.artifact-bg {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  filter: blur(6px) brightness(0.45) saturate(0.6);
+  pointer-events: none;
+  user-select: none;
+}
+.artifact-header-bar {
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  padding: 14px 24px;
+  display: flex; align-items: center; gap: 16px;
+}
+.arti-back { width: 28px; height: 28px; border-radius: 8px; background: #334155; }
+.arti-title { font-size: 15px; font-weight: 700; }
+.arti-sub   { font-size: 12px; color: #64748b; margin-top: 1px; }
+.arti-score-badge {
+  margin-left: auto; background: rgba(34,197,94,0.15);
+  border: 1px solid rgba(34,197,94,0.4); border-radius: 10px;
+  padding: 6px 16px; font-size: 22px; font-weight: 800; color: #22c55e;
+}
+.artifact-body {
+  flex: 1; display: flex;
+}
+.sidebar-bg {
+  width: 220px; background: #131f35; border-right: 1px solid #1e293b;
+  padding: 16px;
+}
+.sidebar-item {
+  height: 10px; border-radius: 4px; background: #1e293b; margin-bottom: 8px;
+}
+.main-bg { flex: 1; padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.bg-card { background: #1e293b; border-radius: 12px; border: 1px solid #334155; padding: 16px; }
+.bg-card-title { height: 10px; border-radius: 3px; background: #334155; width: 60%; margin-bottom: 12px; }
+.bg-card-bar { height: 8px; border-radius: 3px; background: #263347; margin-bottom: 6px; }
+.bg-card-bar.green { background: rgba(34,197,94,0.3); width: 75%; }
+.bg-card-bar.short { width: 50%; }
+.bg-card-bar.med { width: 65%; }
+.bg-chart { height: 80px; background: linear-gradient(180deg, rgba(34,197,94,0.2) 0%, transparent 100%); border-radius: 6px; position: relative; overflow: hidden; }
+.bg-chart::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; background:#22c55e; }
+
+/* ── Overlay dim ── */
+.overlay-dim {
+  position: absolute; inset: 0;
+  background: rgba(9,15,29,0.72);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+
+/* ── Modal container ── */
+.modal-wrap {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  pointer-events: none;
+}
+.modal {
+  width: var(--modal-w);
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+  pointer-events: all;
+  overflow: hidden;
+  animation: modalIn 0.2s ease;
+}
+@keyframes modalIn {
+  from { opacity:0; transform: translateY(12px) scale(0.98); }
+  to   { opacity:1; transform: translateY(0) scale(1); }
+}
+
+/* ── Modal header ── */
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; justify-content: space-between;
+}
+.modal-header-left h2 { font-size: 17px; font-weight: 700; }
+.modal-header-left p  { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.modal-close {
+  width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border);
+  background: transparent; color: var(--muted); font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+}
+.modal-close:hover { background: #334155; color: white; }
+
+/* ── Modal body ── */
+.modal-body { padding: 20px 24px; }
+
+/* ── Format cards ── */
+.format-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.format-card {
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.18s;
+  position: relative;
+  background: rgba(255,255,255,0.02);
+}
+.format-card:hover { border-color: var(--faint); background: rgba(255,255,255,0.04); }
+.format-card.selected {
+  border-color: var(--green);
+  background: var(--green-dim);
+  box-shadow: 0 0 0 1px var(--green);
+}
+.format-card-check {
+  position: absolute; top: 10px; right: 10px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--green); display: flex; align-items: center; justify-content: center;
+  opacity: 0; transform: scale(0.6); transition: all 0.18s;
+}
+.format-card.selected .format-card-check { opacity: 1; transform: scale(1); }
+.format-card-check svg { width: 11px; height: 11px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.format-icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 10px;
+}
+.format-icon svg { width: 24px; height: 24px; }
+.format-card h3 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.format-card p  { font-size: 11px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+.format-meta { font-size: 11px; color: var(--faint); font-weight: 500; margin-bottom: 10px; }
+.format-meta span { color: var(--green); }
+
+/* Thumbnail previews */
+.thumb {
+  border-radius: 6px; overflow: hidden; border: 1px solid var(--border);
+  font-size: 0;
+}
+.thumb-pdf {
+  background: #fff;
+  padding: 6px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.thumb-pdf-bar {
+  height: 3px; border-radius: 2px; background: #22c55e;
+  margin-bottom: 3px;
+}
+.thumb-pdf-title {
+  font-size: 6px; font-weight: 700; color: #0f172a; line-height: 1.2;
+  font-family: system-ui;
+}
+.thumb-pdf-line { height: 2px; border-radius: 1px; background: #e2e8f0; }
+.thumb-pdf-line.short { width: 70%; }
+.thumb-pdf-logo { font-size: 5px; color: #94a3b8; margin-top: auto; font-family: system-ui; }
+
+.thumb-pptx {
+  background: #0f172a;
+  padding: 6px;
+  display: flex; flex-direction: column; gap: 3px;
+  position: relative;
+}
+.thumb-pptx-title {
+  font-size: 7px; font-weight: 800; color: #fff; font-family: system-ui;
+}
+.thumb-pptx-sub { font-size: 5px; color: #94a3b8; font-family: system-ui; }
+.thumb-pptx-badge {
+  position: absolute; top: 6px; right: 6px;
+  background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.5);
+  border-radius: 3px; padding: 1px 4px; font-size: 5px; color: #22c55e;
+  font-family: system-ui; font-weight: 700;
+}
+.thumb-pptx-line { height: 2px; border-radius: 1px; background: rgba(255,255,255,0.08); }
+
+/* ── Options section ── */
+.options-section { margin-bottom: 18px; }
+.options-label { font-size: 11px; font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+.option-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 0; border-bottom: 1px solid rgba(51,65,85,0.5);
+}
+.option-row:last-of-type { border-bottom: none; }
+.option-label { font-size: 13px; color: var(--white); }
+.option-sub   { font-size: 11px; color: var(--faint); margin-top: 1px; }
+
+/* Toggle switch */
+.toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute; inset: 0; border-radius: 20px; background: var(--border);
+  transition: background 0.2s; cursor: pointer;
+}
+.toggle input:checked + .toggle-track { background: var(--green); }
+.toggle-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 14px; height: 14px; border-radius: 50%; background: white;
+  transition: transform 0.2s; pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.toggle input:checked ~ .toggle-thumb { transform: translateX(16px); }
+
+/* Text input */
+.text-input-row { margin-top: 10px; }
+.text-input-label { font-size: 11px; color: var(--faint); margin-bottom: 5px; display: block; }
+.text-input {
+  width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--white);
+  font-family: inherit; outline: none; transition: border-color 0.15s;
+}
+.text-input::placeholder { color: var(--faint); }
+.text-input:focus { border-color: var(--green); }
+
+/* ── Action area ── */
+.modal-footer { padding: 16px 24px 20px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+.btn-primary {
+  width: 100%; height: 48px; border-radius: 10px;
+  background: var(--green); border: none; color: white;
+  font-size: 14px; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: all 0.18s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-primary:hover { background: #16a34a; box-shadow: 0 4px 16px rgba(34,197,94,0.3); }
+.btn-primary svg { width: 16px; height: 16px; }
+.btn-cancel {
+  width: 100%; height: 36px; border-radius: 8px;
+  background: transparent; border: 1px solid var(--border); color: var(--muted);
+  font-size: 13px; font-weight: 500; font-family: inherit;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-cancel:hover { border-color: var(--faint); color: var(--white); }
+
+/* ── STATE B: Generating ── */
+.generating-state { padding: 8px 0; }
+.gen-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.spin-wrap { width: 40px; height: 40px; flex-shrink:0; }
+.spinner {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--green);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.gen-header-text h3 { font-size: 15px; font-weight: 700; }
+.gen-header-text p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.progress-bar-wrap { margin-bottom: 12px; }
+.progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.progress-label span:last-child { color: var(--green); font-weight: 600; }
+.progress-track {
+  height: 6px; border-radius: 3px; background: var(--border); overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%);
+  width: 67%;
+  position: relative;
+  animation: progressPulse 1.5s ease-in-out infinite;
+}
+@keyframes progressPulse {
+  0%,100% { filter: brightness(1); }
+  50%      { filter: brightness(1.2); }
+}
+.progress-fill::after {
+  content: '';
+  position: absolute; top:0; right:0; bottom:0; width: 40px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25));
+  animation: shimmer 1s linear infinite;
+}
+@keyframes shimmer {
+  from { transform: translateX(-40px); }
+  to   { transform: translateX(40px); }
+}
+
+.gen-steps { display: flex; flex-direction: column; gap: 8px; }
+.gen-step { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.gen-step-dot {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink:0;
+  display: flex; align-items: center; justify-content: center;
+}
+.gen-step-dot.done { background: var(--green); }
+.gen-step-dot.done svg { width: 10px; height: 10px; stroke: white; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.gen-step-dot.active { background: transparent; border: 2px solid var(--green); animation: dotPulse 1s ease-in-out infinite; }
+@keyframes dotPulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+.gen-step-dot.pending { background: var(--border); }
+.gen-step-text.done   { color: var(--muted); }
+.gen-step-text.active { color: var(--white); font-weight: 500; }
+.gen-step-text.pending{ color: var(--faint); }
+
+/* ── STATE C: Success ── */
+.success-state { padding: 8px 0; text-align: center; }
+.success-icon-wrap { margin: 0 auto 16px; width: 64px; height: 64px; position: relative; }
+.success-circle {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: var(--green-dim); border: 2px solid var(--green);
+  display: flex; align-items: center; justify-content: center;
+  animation: successPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes successPop {
+  from { transform: scale(0.4); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.success-circle svg { width: 28px; height: 28px; stroke: var(--green); fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.success-state h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.success-state p  { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+.success-preview {
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px; display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px; text-align: left;
+}
+.success-file-icon {
+  width: 40px; height: 48px; border-radius: 6px; background: rgba(34,197,94,0.12);
+  border: 1px solid rgba(34,197,94,0.3);
+  display: flex; align-items: center; justify-content: center; flex-shrink:0;
+}
+.success-file-icon svg { width: 18px; height: 18px; stroke: var(--green); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.success-file-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+.success-file-meta { font-size: 11px; color: var(--muted); }
+.success-file-size { font-size: 11px; color: var(--faint); margin-top: 2px; }
+
+.success-actions { display: flex; flex-direction: column; gap: 8px; }
+.btn-download {
+  width: 100%; height: 44px; border-radius: 10px;
+  background: var(--green); border: none; color: white;
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: all 0.18s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-download:hover { background: #16a34a; }
+.btn-download svg { width: 15px; height: 15px; stroke:white; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+.btn-share {
+  width: 100%; height: 44px; border-radius: 10px;
+  background: transparent; border: 1px solid var(--border); color: var(--muted);
+  font-size: 13px; font-weight: 500; font-family: inherit;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-share:hover { border-color: var(--faint); color: white; }
+.btn-share svg { width: 15px; height: 15px; stroke: currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ── Annotations ── */
+.annotations {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 20px 24px;
+}
+.ann-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.ann-section h4 {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--green); margin-bottom: 8px;
+}
+.ann-section ul { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+.ann-section li {
+  font-size: 11px; color: var(--muted);
+  padding-left: 12px; position: relative; line-height: 1.45;
+}
+.ann-section li::before { content: '→'; position: absolute; left: 0; color: var(--green); font-size: 9px; top: 1px; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- Browser chrome -->
+<div class="browser-chrome">
+  <div class="chrome-dots">
+    <span class="chrome-dot dot-r"></span>
+    <span class="chrome-dot dot-y"></span>
+    <span class="chrome-dot dot-g"></span>
+  </div>
+  <div class="chrome-url">app.soapbox.com/rsra/meridian-tower/assessment</div>
+</div>
+
+<!-- Top nav -->
+<nav class="top-nav">
+  <span class="nav-logo">Soapbox</span>
+  <span class="nav-sep">/</span>
+  <span class="nav-title">RSRA Stage Demo — Frame 5 · Export Assessment</span>
+  <div class="nav-links">
+    <a href="frame4-artifact.html" class="nav-link">← Frame 4</a>
+    <a href="index.html" class="nav-link">View all frames</a>
+    <a href="#" class="nav-link active">5 · Export</a>
+  </div>
+</nav>
+
+<!-- State tab switcher -->
+<div class="state-tabs">
+  <span class="state-tabs-label">State:</span>
+  <button class="tab-btn active" onclick="setState('A',this)">A · Format Selection</button>
+  <button class="tab-btn" onclick="setState('B',this)">B · Generating</button>
+  <button class="tab-btn" onclick="setState('C',this)">C · Success</button>
+  <span class="tab-hint">Click to switch export modal state</span>
+</div>
+
+<!-- Stage -->
+<div class="stage">
+
+  <!-- Blurred artifact background -->
+  <div class="artifact-bg">
+    <div class="artifact-header-bar">
+      <div class="arti-back"></div>
+      <div>
+        <div class="arti-title">Meridian Tower — RSRA Assessment</div>
+        <div class="arti-sub">San Francisco, CA · 47-story mixed-use · 2026 Assessment</div>
+      </div>
+      <div class="arti-score-badge">82</div>
+    </div>
+    <div class="artifact-body">
+      <div class="sidebar-bg">
+        <div class="sidebar-item" style="width:80%"></div>
+        <div class="sidebar-item" style="width:65%; background:#1a2e4a;"></div>
+        <div class="sidebar-item" style="width:90%; margin-top:16px;"></div>
+        <div class="sidebar-item" style="width:55%;"></div>
+        <div class="sidebar-item" style="width:75%;"></div>
+        <div class="sidebar-item" style="width:60%; margin-top:16px;"></div>
+        <div class="sidebar-item" style="width:80%;"></div>
+      </div>
+      <div class="main-bg">
+        <div class="bg-card">
+          <div class="bg-card-title"></div>
+          <div class="bg-card-bar green"></div>
+          <div class="bg-card-bar short"></div>
+          <div class="bg-card-bar med"></div>
+          <div class="bg-card-bar" style="width:85%"></div>
+          <div class="bg-chart" style="margin-top:12px;"></div>
+        </div>
+        <div class="bg-card">
+          <div class="bg-card-title" style="width:50%"></div>
+          <div class="bg-card-bar med"></div>
+          <div class="bg-card-bar short"></div>
+          <div class="bg-card-bar green"></div>
+          <div class="bg-card-bar" style="width:40%"></div>
+        </div>
+        <div class="bg-card">
+          <div class="bg-card-title" style="width:70%"></div>
+          <div class="bg-chart"></div>
+        </div>
+        <div class="bg-card">
+          <div class="bg-card-title" style="width:55%"></div>
+          <div class="bg-card-bar" style="width:90%"></div>
+          <div class="bg-card-bar short"></div>
+          <div class="bg-card-bar med"></div>
+          <div class="bg-card-bar green"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay dim -->
+  <div class="overlay-dim"></div>
+
+  <!-- Modal -->
+  <div class="modal-wrap">
+    <div class="modal" id="export-modal">
+
+      <!-- Header (always shown) -->
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <h2 id="modal-title">Export Assessment</h2>
+          <p id="modal-sub">Choose your format</p>
+        </div>
+        <button class="modal-close" title="Close">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- ==================== STATE A: Format Selection ==================== -->
+      <div id="state-A">
+        <div class="modal-body">
+
+          <!-- Format cards -->
+          <div class="format-cards">
+
+            <!-- PDF Report Card -->
+            <div class="format-card selected" id="card-pdf" onclick="selectFormat('pdf')">
+              <div class="format-card-check">
+                <svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>
+              </div>
+              <div class="format-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+              </div>
+              <h3>PDF Report</h3>
+              <p>Full sustainability assessment with data tables, charts, and methodology notes</p>
+              <div class="format-meta">Approx. <span>~12 pages</span></div>
+              <!-- PDF thumbnail -->
+              <div class="thumb thumb-pdf">
+                <div class="thumb-pdf-bar"></div>
+                <div class="thumb-pdf-title">Meridian Tower<br>RSRA Assessment 2026</div>
+                <div style="margin:3px 0 2px;">
+                  <div class="thumb-pdf-line" style="width:90%; margin-bottom:2px;"></div>
+                  <div class="thumb-pdf-line short" style="margin-bottom:2px;"></div>
+                  <div class="thumb-pdf-line" style="width:80%; margin-bottom:2px;"></div>
+                  <div class="thumb-pdf-line short"></div>
+                </div>
+                <div class="thumb-pdf-logo">Soapbox · Confidential</div>
+              </div>
+            </div>
+
+            <!-- Slide Deck Card -->
+            <div class="format-card" id="card-pptx" onclick="selectFormat('pptx')">
+              <div class="format-card-check">
+                <svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>
+              </div>
+              <div class="format-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2"/>
+                  <line x1="8" y1="21" x2="16" y2="21"/>
+                  <line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+              </div>
+              <h3>Slide Deck (PPTX)</h3>
+              <p>Executive presentation ready for boardroom or investor meetings</p>
+              <div class="format-meta"><span>8 slides</span></div>
+              <!-- PPTX thumbnail -->
+              <div class="thumb thumb-pptx" style="min-height:52px;">
+                <div class="thumb-pptx-title">Meridian Tower</div>
+                <div class="thumb-pptx-sub">RSRA Assessment · 2026</div>
+                <div class="thumb-pptx-badge">82</div>
+                <div style="margin-top:6px;">
+                  <div class="thumb-pptx-line" style="width:80%; margin-bottom:3px;"></div>
+                  <div class="thumb-pptx-line" style="width:55%;"></div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /format-cards -->
+
+          <!-- Options section -->
+          <div class="options-section">
+            <div class="options-label">Options</div>
+
+            <div class="option-row">
+              <div>
+                <div class="option-label">Include methodology appendix</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" checked>
+                <div class="toggle-track"></div>
+                <div class="toggle-thumb"></div>
+              </label>
+            </div>
+
+            <div class="option-row">
+              <div>
+                <div class="option-label">Branding: Soapbox + Soapbox</div>
+                <div class="option-sub">Co-brand with your firm logo</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" checked>
+                <div class="toggle-track"></div>
+                <div class="toggle-thumb"></div>
+              </label>
+            </div>
+
+            <div class="text-input-row">
+              <label class="text-input-label" for="email-input">Recipient email (optional)</label>
+              <input type="email" id="email-input" class="text-input" placeholder="e.g. investor@firm.com">
+            </div>
+          </div>
+
+        </div><!-- /modal-body -->
+
+        <!-- Footer -->
+        <div class="modal-footer">
+          <button class="btn-primary" id="export-btn" onclick="setState('B', document.querySelectorAll('.tab-btn')[1]); simulateGenerate()">
+            <svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 10v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2"/>
+              <polyline points="5,7 8,10 11,7"/>
+              <line x1="8" y1="2" x2="8" y2="10"/>
+            </svg>
+            <span id="export-btn-label">Export PDF Report</span>
+          </button>
+          <button class="btn-cancel">Cancel</button>
+        </div>
+      </div><!-- /state-A -->
+
+      <!-- ==================== STATE B: Generating ==================== -->
+      <div id="state-B" style="display:none;">
+        <div class="modal-body">
+          <div class="generating-state">
+
+            <div class="gen-header">
+              <div class="spin-wrap">
+                <div class="spinner"></div>
+              </div>
+              <div class="gen-header-text">
+                <h3>Generating your report…</h3>
+                <p>This usually takes 10–20 seconds</p>
+              </div>
+            </div>
+
+            <div class="progress-bar-wrap">
+              <div class="progress-label">
+                <span>Compiling assessment data</span>
+                <span id="pct-label">67%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" id="progress-fill"></div>
+              </div>
+            </div>
+
+            <div class="gen-steps">
+              <div class="gen-step">
+                <div class="gen-step-dot done">
+                  <svg viewBox="0 0 10 10"><polyline points="2,5 4,7.5 8,2.5"/></svg>
+                </div>
+                <span class="gen-step-text done">Fetching property data &amp; scores</span>
+              </div>
+              <div class="gen-step">
+                <div class="gen-step-dot done">
+                  <svg viewBox="0 0 10 10"><polyline points="2,5 4,7.5 8,2.5"/></svg>
+                </div>
+                <span class="gen-step-text done">Rendering charts &amp; visualizations</span>
+              </div>
+              <div class="gen-step">
+                <div class="gen-step-dot active"></div>
+                <span class="gen-step-text active">Formatting document layout…</span>
+              </div>
+              <div class="gen-step">
+                <div class="gen-step-dot pending"></div>
+                <span class="gen-step-text pending">Applying branding &amp; cover page</span>
+              </div>
+              <div class="gen-step">
+                <div class="gen-step-dot pending"></div>
+                <span class="gen-step-text pending">Finalizing &amp; compressing PDF</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" onclick="setState('A', document.querySelectorAll('.tab-btn')[0])">Cancel</button>
+        </div>
+      </div><!-- /state-B -->
+
+      <!-- ==================== STATE C: Success ==================== -->
+      <div id="state-C" style="display:none;">
+        <div class="modal-body">
+          <div class="success-state">
+
+            <div class="success-icon-wrap">
+              <div class="success-circle">
+                <svg viewBox="0 0 28 28"><polyline points="5,14 11,20 23,8"/></svg>
+              </div>
+            </div>
+
+            <h3>Your report is ready!</h3>
+            <p>Meridian Tower RSRA Assessment 2026 has been generated and is ready to download or share.</p>
+
+            <!-- File preview card -->
+            <div class="success-preview">
+              <div class="success-file-icon">
+                <svg viewBox="0 0 18 18">
+                  <path d="M10 2H4a1.5 1.5 0 0 0-1.5 1.5v11A1.5 1.5 0 0 0 4 16h10a1.5 1.5 0 0 0 1.5-1.5V7.5z"/>
+                  <polyline points="10 2 10 7.5 15.5 7.5"/>
+                </svg>
+              </div>
+              <div style="flex:1; text-align:left;">
+                <div class="success-file-name">Meridian_Tower_RSRA_2026.pdf</div>
+                <div class="success-file-meta">PDF Report · 12 pages · co-branded</div>
+                <div class="success-file-size">3.2 MB · Generated just now</div>
+              </div>
+            </div>
+
+            <div class="success-actions">
+              <button class="btn-download">
+                <svg viewBox="0 0 15 15">
+                  <path d="M13 9v2.5a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 2 11.5V9"/>
+                  <polyline points="4.5,6.5 7.5,9.5 10.5,6.5"/>
+                  <line x1="7.5" y1="1.5" x2="7.5" y2="9.5"/>
+                </svg>
+                Download Report
+              </button>
+              <button class="btn-share">
+                <svg viewBox="0 0 15 15">
+                  <circle cx="12" cy="3" r="1.5"/>
+                  <circle cx="3" cy="7.5" r="1.5"/>
+                  <circle cx="12" cy="12" r="1.5"/>
+                  <line x1="10.5" y1="3.75" x2="4.5" y2="6.75"/>
+                  <line x1="4.5" y1="8.25" x2="10.5" y2="11.25"/>
+                </svg>
+                Copy Share Link
+              </button>
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer" style="padding-top:12px;">
+          <button class="btn-cancel" onclick="setState('A', document.querySelectorAll('.tab-btn')[0])">← Back to Export Options</button>
+        </div>
+      </div><!-- /state-C -->
+
+    </div><!-- /modal -->
+  </div><!-- /modal-wrap -->
+
+</div><!-- /stage -->
+
+<!-- Annotations -->
+<div class="annotations">
+  <div class="ann-grid">
+    <div class="ann-section">
+      <h4>State A · Format Selection</h4>
+      <ul>
+        <li>PDF selected by default with green border + checkmark badge</li>
+        <li>Two large format cards: PDF Report and Slide Deck (PPTX)</li>
+        <li>Inline thumbnail previews show realistic cover layouts</li>
+        <li>Toggle switches for methodology appendix and co-branding</li>
+        <li>Optional recipient email field for direct delivery</li>
+        <li>Primary CTA label updates to reflect selected format</li>
+      </ul>
+    </div>
+    <div class="ann-section">
+      <h4>State B · Generating</h4>
+      <ul>
+        <li>Spinner animation with 67% progress bar shown</li>
+        <li>Animated shimmer effect on progress fill</li>
+        <li>Step checklist: done / active (pulsing) / pending states</li>
+        <li>Cancel button available to abort</li>
+        <li>Progress bar pulses for perceived activity</li>
+        <li>Realistic step labels match PDF generation pipeline</li>
+      </ul>
+    </div>
+    <div class="ann-section">
+      <h4>State C · Success</h4>
+      <ul>
+        <li>Green checkmark circle with pop-in animation</li>
+        <li>File card shows filename, page count, branding, and size</li>
+        <li>Primary: "Download Report" with download icon</li>
+        <li>Secondary: "Copy Share Link" with share icon</li>
+        <li>Back link returns to format selection for re-export</li>
+        <li>Modal blurs + dims the frame 4 artifact view behind it</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State switching ──
+function setState(state, triggerBtn) {
+  // Hide all states
+  document.getElementById('state-A').style.display = 'none';
+  document.getElementById('state-B').style.display = 'none';
+  document.getElementById('state-C').style.display = 'none';
+  // Show target state
+  document.getElementById('state-' + state).style.display = 'block';
+  // Update modal header text
+  const titles = { A: ['Export Assessment', 'Choose your format'], B: ['Generating Export', 'Please wait…'], C: ['Export Complete', 'Ready to download'] };
+  document.getElementById('modal-title').textContent = titles[state][0];
+  document.getElementById('modal-sub').textContent   = titles[state][1];
+  // Update tab button active state
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (triggerBtn) triggerBtn.classList.add('active');
+}
+
+// ── Format card selection ──
+function selectFormat(fmt) {
+  document.getElementById('card-pdf').classList.remove('selected');
+  document.getElementById('card-pptx').classList.remove('selected');
+  document.getElementById('card-' + fmt).classList.add('selected');
+  const label = fmt === 'pdf' ? 'Export PDF Report' : 'Export Slide Deck';
+  document.getElementById('export-btn-label').textContent = label;
+}
+
+// ── Simulate generate → auto-advance to success ──
+function simulateGenerate() {
+  const fill = document.getElementById('progress-fill');
+  const pct  = document.getElementById('pct-label');
+  if (!fill) return;
+  let val = 67;
+  fill.style.width = val + '%';
+  const timer = setInterval(() => {
+    val += Math.random() * 4 + 1;
+    if (val >= 100) {
+      val = 100;
+      clearInterval(timer);
+      fill.style.width = '100%';
+      pct.textContent = '100%';
+      setTimeout(() => {
+        setState('C', document.querySelectorAll('.tab-btn')[2]);
+      }, 600);
+      return;
+    }
+    fill.style.width = val + '%';
+    pct.textContent = Math.floor(val) + '%';
+  }, 220);
+}
+
+// ── Toggle interaction ──
+document.querySelectorAll('.toggle input').forEach(inp => {
+  inp.addEventListener('change', function() {
+    const track = this.nextElementSibling;
+    // Visual handled by CSS :checked state
+  });
+});
+
+// ── Initial state ──
+setState('A', document.querySelectorAll('.tab-btn')[0]);
+</script>
+
+</body>
+</html>

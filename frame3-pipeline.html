@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSRA Demo — Frame 3: Pipeline Progress Indicator</title>
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0f172a;
+  --surface:  #1e293b;
+  --surface2: #263348;
+  --border:   #334155;
+  --border2:  #475569;
+  --green:    #22c55e;
+  --green-dim:#16a34a;
+  --green-bg: rgba(34,197,94,0.10);
+  --amber:    #f59e0b;
+  --amber-bg: rgba(245,158,11,0.12);
+  --red:      #ef4444;
+  --white:    #f1f5f9;
+  --muted:    #94a3b8;
+  --muted2:   #64748b;
+  --radius:   12px;
+  --radius-sm: 8px;
+  --font:     'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--white);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes pulse-ring {
+  0%   { transform: scale(1);   opacity: 1; }
+  50%  { transform: scale(1.25); opacity: 0.5; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+@keyframes pop-in {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes fill-down {
+  from { height: 0; }
+  to   { height: 100%; }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dot-pulse {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40%            { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes progress-bar {
+  0%   { width: 15%; }
+  100% { width: 72%; }
+}
+
+@keyframes metric-reveal {
+  from { opacity: 0; filter: blur(4px); transform: translateX(-4px); }
+  to   { opacity: 1; filter: blur(0);   transform: translateX(0); }
+}
+
+@keyframes banner-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ===== NAV ===== */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 32px;
+  background: rgba(15,23,42,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo { font-size: 16px; font-weight: 700; color: var(--green); letter-spacing: -0.02em; }
+.nav-sep  { color: var(--border); }
+.nav-title { font-size: 13px; color: var(--muted); }
+.nav-badge {
+  margin-left: 4px;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--amber); background: var(--amber-bg);
+  border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 4px; padding: 2px 7px;
+}
+.nav-links { margin-left: auto; display: flex; gap: 8px; }
+.nav-link {
+  font-size: 12px; color: var(--muted2); text-decoration: none;
+  padding: 5px 12px; border-radius: 6px;
+  border: 1px solid var(--border);
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-link:hover { color: var(--green); border-color: var(--green); }
+.nav-link.current { color: var(--green); border-color: var(--green); background: var(--green-bg); }
+
+/* ===== PAGE LAYOUT ===== */
+.page-header {
+  padding: 36px 32px 24px;
+  text-align: center;
+}
+.frame-label {
+  display: inline-block;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--green); background: var(--green-bg);
+  border: 1px solid rgba(34,197,94,0.2);
+  border-radius: 4px; padding: 3px 10px;
+  margin-bottom: 12px;
+}
+.page-header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; }
+.page-header p  { color: var(--muted); font-size: 14px; margin-top: 6px; }
+
+.page-body {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+
+/* ===== STATE TABS ===== */
+.state-tabs {
+  display: flex; gap: 0; margin-bottom: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px; padding: 4px;
+}
+.state-tab {
+  flex: 1; padding: 9px 12px;
+  border: none; border-radius: 7px;
+  font-family: var(--font); font-size: 12px; font-weight: 500;
+  color: var(--muted2); background: transparent;
+  cursor: pointer; transition: all 0.18s;
+  text-align: center;
+}
+.state-tab:hover { color: var(--white); }
+.state-tab.active {
+  color: var(--white);
+  background: var(--surface2);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.state-tab .tab-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  margin-right: 6px; vertical-align: middle;
+}
+
+/* ===== BROWSER CHROME ===== */
+.browser {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+}
+.browser-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  background: #131c2e;
+  border-bottom: 1px solid var(--border);
+}
+.browser-dots { display: flex; gap: 6px; }
+.browser-dot { width: 11px; height: 11px; border-radius: 50%; }
+.browser-dot.red    { background: #ff5f57; }
+.browser-dot.yellow { background: #febc2e; }
+.browser-dot.green  { background: #28c840; }
+.browser-url {
+  flex: 1; margin: 0 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 14px;
+  font-size: 11px; color: var(--muted2);
+  text-align: center;
+}
+.browser-tabs {
+  display: flex; gap: 4px;
+}
+.browser-tab {
+  font-size: 10px; color: var(--muted2);
+  padding: 3px 10px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 4px;
+  border: 1px solid transparent;
+}
+.browser-tab.active-tab {
+  color: var(--white);
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+/* ===== APP SHELL ===== */
+.app-content {
+  background: var(--bg);
+  padding: 32px 24px 32px;
+  min-height: 520px;
+}
+
+/* ===== ASSET HEADER ===== */
+.asset-header {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  max-width: 680px; margin-left: auto; margin-right: auto;
+}
+.asset-icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  background: var(--green-bg);
+  border: 1px solid rgba(34,197,94,0.2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.asset-icon svg { width: 22px; height: 22px; color: var(--green); }
+.asset-info { flex: 1; min-width: 0; }
+.asset-name { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.asset-addr { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.asset-status {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+  flex-shrink: 0;
+}
+.asset-status.processing {
+  background: var(--amber-bg);
+  border: 1px solid rgba(245,158,11,0.25);
+  color: var(--amber);
+}
+.asset-status.complete {
+  background: var(--green-bg);
+  border: 1px solid rgba(34,197,94,0.25);
+  color: var(--green);
+}
+.status-pulse {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor;
+  animation: pulse-ring 1.8s ease-in-out infinite;
+}
+
+/* ===== PIPELINE CONTAINER ===== */
+.pipeline-wrap {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+/* ===== STEP ROW ===== */
+.pipeline-steps { display: flex; flex-direction: column; }
+
+.step-row {
+  display: flex; gap: 0;
+  position: relative;
+}
+
+/* Vertical connector track */
+.step-track {
+  display: flex; flex-direction: column; align-items: center;
+  width: 40px; flex-shrink: 0;
+  padding-top: 2px;
+}
+.step-icon-wrap {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; position: relative; z-index: 2;
+}
+.step-icon-wrap svg { width: 15px; height: 15px; }
+
+/* State: done */
+.step-icon-wrap.done {
+  background: var(--green);
+  border: 2px solid var(--green);
+  animation: pop-in 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.step-icon-wrap.done svg { color: #fff; }
+
+/* State: running */
+.step-icon-wrap.running {
+  background: var(--amber-bg);
+  border: 2px solid var(--amber);
+}
+.step-icon-wrap.running::before {
+  content: '';
+  position: absolute; inset: -5px;
+  border-radius: 50%;
+  border: 2px solid var(--amber);
+  opacity: 0.4;
+  animation: pulse-ring 1.4s ease-in-out infinite;
+}
+.step-icon-wrap.running svg { color: var(--amber); }
+.step-icon-wrap.running .spinner {
+  position: absolute; inset: -2px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--amber);
+  animation: spin 0.9s linear infinite;
+}
+
+/* State: pending */
+.step-icon-wrap.pending {
+  background: var(--surface2);
+  border: 2px solid var(--border);
+}
+.step-icon-wrap.pending svg { color: var(--muted2); }
+
+/* Connector line */
+.step-connector {
+  width: 2px;
+  flex: 1;
+  min-height: 20px;
+  background: var(--border);
+  position: relative;
+  overflow: hidden;
+}
+.step-connector.filled::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  background: var(--green);
+  height: 100%;
+  animation: fill-down 0.5s ease-out both;
+}
+.step-connector.partial::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  background: linear-gradient(to bottom, var(--green), var(--amber));
+  height: 50%;
+}
+
+/* Step body */
+.step-body {
+  flex: 1; padding: 4px 0 28px 16px;
+  min-width: 0;
+}
+.step-row:last-child .step-body { padding-bottom: 8px; }
+
+.step-top {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 32px;
+}
+.step-name {
+  font-size: 14px; font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.step-name.running { color: var(--amber); }
+.step-name.done    { color: var(--white); }
+.step-name.pending { color: var(--muted2); }
+
+.step-badge {
+  margin-left: auto;
+  font-size: 11px; font-weight: 600;
+  padding: 3px 10px; border-radius: 10px;
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 5px;
+}
+.step-badge.done {
+  background: var(--green-bg);
+  border: 1px solid rgba(34,197,94,0.3);
+  color: var(--green);
+}
+.step-badge.running {
+  background: var(--amber-bg);
+  border: 1px solid rgba(245,158,11,0.3);
+  color: var(--amber);
+}
+.step-badge.pending {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  color: var(--muted2);
+}
+.badge-spinner {
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 1.5px solid transparent;
+  border-top-color: var(--amber);
+  animation: spin 0.9s linear infinite;
+  flex-shrink: 0;
+}
+
+.step-desc {
+  font-size: 12px; color: var(--muted);
+  margin-top: 2px;
+}
+.step-desc.running { color: var(--muted); }
+.step-desc.pending { color: var(--muted2); opacity: 0.7; }
+
+/* ===== STREAMING RESULTS PANEL ===== */
+.streaming-panel {
+  margin-top: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  animation: fade-up 0.4s ease both;
+}
+.streaming-header {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 14px;
+}
+.streaming-label {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.streaming-dots {
+  display: flex; gap: 3px; margin-left: auto;
+}
+.streaming-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--amber);
+}
+.streaming-dot:nth-child(1) { animation: dot-pulse 1.4s 0.0s ease-in-out infinite; }
+.streaming-dot:nth-child(2) { animation: dot-pulse 1.4s 0.2s ease-in-out infinite; }
+.streaming-dot:nth-child(3) { animation: dot-pulse 1.4s 0.4s ease-in-out infinite; }
+
+.metric-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid rgba(51,65,85,0.5);
+  animation: metric-reveal 0.5s ease both;
+}
+.metric-row:nth-child(2) { animation-delay: 0.15s; }
+.metric-row:nth-child(3) { animation-delay: 0.30s; }
+.metric-row:nth-child(4) { animation-delay: 0.45s; }
+
+.metric-name {
+  font-size: 12px; color: var(--muted);
+  width: 130px; flex-shrink: 0;
+}
+.metric-bar-wrap {
+  flex: 1; height: 8px; border-radius: 4px;
+  background: rgba(255,255,255,0.07);
+  overflow: hidden;
+}
+.metric-bar {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--surface2) 25%, rgba(148,163,184,0.2) 50%, var(--surface2) 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.6s linear infinite, progress-bar 2.5s ease-out both;
+}
+.metric-bar.bar-green {
+  background: linear-gradient(90deg, rgba(34,197,94,0.2) 0%, rgba(34,197,94,0.5) 60%, rgba(34,197,94,0.2) 100%),
+              linear-gradient(90deg, var(--surface2) 25%, rgba(148,163,184,0.15) 50%, var(--surface2) 75%);
+  background-size: 100% 100%, 400px 100%;
+}
+.metric-value {
+  font-size: 12px; color: var(--muted2);
+  width: 60px; text-align: right; flex-shrink: 0;
+}
+
+/* ===== SUCCESS BANNER ===== */
+.success-banner {
+  max-width: 680px; margin: 0 auto;
+  display: flex; align-items: center; gap: 14px;
+  background: var(--green-bg);
+  border: 1px solid rgba(34,197,94,0.3);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-top: 20px;
+  animation: banner-in 0.45s cubic-bezier(0.34,1.2,0.64,1) both;
+}
+.success-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--green);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  animation: pop-in 0.4s 0.1s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.success-icon svg { width: 18px; height: 18px; color: #fff; }
+.success-text { flex: 1; }
+.success-title { font-size: 14px; font-weight: 700; color: var(--green); }
+.success-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.success-cta {
+  font-size: 12px; font-weight: 600; color: var(--green);
+  text-decoration: none; padding: 7px 16px;
+  border: 1px solid rgba(34,197,94,0.4);
+  border-radius: 8px;
+  background: rgba(34,197,94,0.08);
+  display: flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.success-cta:hover { background: rgba(34,197,94,0.15); }
+
+/* ===== ANNOTATION ===== */
+.annotation-section {
+  margin-top: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.annotation-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+}
+.annotation-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--green);
+}
+.annotation-title { font-size: 13px; font-weight: 600; color: var(--white); }
+.annotation-body { padding: 18px 20px; }
+.anno-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.anno-item {}
+.anno-item-label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--muted2); margin-bottom: 6px;
+}
+.anno-item-notes { display: flex; flex-direction: column; gap: 5px; }
+.anno-note {
+  font-size: 12px; color: var(--muted);
+  padding: 5px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: flex; align-items: flex-start; gap: 6px;
+}
+.anno-arrow { color: var(--green); flex-shrink: 0; }
+
+/* ===== HIDDEN / VISIBLE ===== */
+.state-panel { display: none; }
+.state-panel.active { display: block; }
+
+/* ===== UTILITY ===== */
+.visually-hidden { display: none; }
+
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <span class="nav-logo">RSRA</span>
+  <span class="nav-sep">|</span>
+  <span class="nav-title">Stage Demo Prototype</span>
+  <span class="nav-badge">Design</span>
+  <div class="nav-links">
+    <a href="frame2-map.html" class="nav-link">← Frame 2</a>
+    <a href="#" class="nav-link current">Frame 3</a>
+    <a href="frame4-report.html" class="nav-link">Frame 4 →</a>
+  </div>
+</nav>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="frame-label">Frame 3 of 5</div>
+  <h1>Pipeline Progress Indicator</h1>
+  <p>The 10–30 second wait that must feel alive. Toggle states below to preview each phase.</p>
+</div>
+
+<div class="page-body">
+
+  <!-- STATE TABS -->
+  <div class="state-tabs" role="tablist" aria-label="Pipeline states">
+    <button class="state-tab active" role="tab" onclick="setTab('a')" id="tab-a">
+      <span class="tab-dot" style="background:#f59e0b"></span>
+      State A — Step 1 Done, Step 2 Running
+    </button>
+    <button class="state-tab" role="tab" onclick="setTab('b')" id="tab-b">
+      <span class="tab-dot" style="background:#f59e0b"></span>
+      State B — Steps 1–3 Done, Step 4 Running
+    </button>
+    <button class="state-tab" role="tab" onclick="setTab('c')" id="tab-c">
+      <span class="tab-dot" style="background:#22c55e"></span>
+      State C — All Complete
+    </button>
+  </div>
+
+  <!-- BROWSER CHROME WRAPPER -->
+  <div class="browser">
+    <div class="browser-bar">
+      <div class="browser-dots">
+        <div class="browser-dot red"></div>
+        <div class="browser-dot yellow"></div>
+        <div class="browser-dot green"></div>
+      </div>
+      <div class="browser-tabs">
+        <div class="browser-tab">Dashboard</div>
+        <div class="browser-tab active-tab">Analysis · Meridian Tower</div>
+      </div>
+      <div class="browser-url">app.rsra.io/analysis/meridian-tower</div>
+    </div>
+
+    <div class="app-content">
+
+      <!-- ===== STATE A ===== -->
+      <div class="state-panel active" id="panel-a">
+
+        <!-- Asset Header -->
+        <div class="asset-header">
+          <div class="asset-icon">
+            <!-- Building SVG -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M9 22V12h6v10M9 7h.01M15 7h.01M9 11h.01M15 11h.01"/>
+            </svg>
+          </div>
+          <div class="asset-info">
+            <div class="asset-name">Meridian Tower</div>
+            <div class="asset-addr">1200 Bay Street, Toronto, ON · Office · 48 floors</div>
+          </div>
+          <div class="asset-status processing">
+            <div class="status-pulse"></div>
+            Processing
+          </div>
+        </div>
+
+        <!-- Pipeline -->
+        <div class="pipeline-wrap">
+          <div class="pipeline-steps">
+
+            <!-- Step 1: Done -->
+            <div class="step-row">
+              <div class="step-track">
+                <div class="step-icon-wrap done">
+                  <!-- Building icon -->
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </div>
+                <div class="step-connector filled"></div>
+              </div>
+              <div class="step-body">
+                <div class="step-top">
+                  <span class="step-name done">Soapbox Asset</span>
+                  <span class="step-badge done">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Done
+                  </span>
+                </div>
+                <div class="step-desc done">Asset record created in Soapbox — ID #MTW-2024-031</div>
+              </div>
+            </div>
+
+            <!-- Step 2: Running -->
+            <div class="step-row">
+              <div class="step-track">
+                <div class="step-icon-wrap running">
+                  <div class="spinner"></div>
+                  <!-- Leaf icon -->
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
+                    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                  </svg>
+                </div>
+                <div class="step-connector partial"></div>
+              </div>
+              <div class="step-body">
+                <div class="step-top">
+                  <span class="step-name running">Audette Integration</span>
+                  <span class="step-badge running">
+                    <div class="badge-spinner"></div>
+                    Running...
+                  </span>
+                </div>
+                <div class="step-desc running">Connecting to Audette carbon platform — fetching building baseline</div>
+              </div>
+            </div>
+
+            <!-- Step 3: Pending -->
+            <div class="step-row">
+              <div class="step-track">
+                <div class="step-icon-wrap pending">
+                  <!-- Bolt icon -->
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                </div>
+                <div class="step-connector"></div>
+              </div>
+              <div class="step-body">
+                <div class="step-top">
+                  <span class="step-name pending">Energy Measures</span>
+                  <span class="step-badge pending">Pending</span>
+                </div>
+                <div class="step-desc pending">Modelling energy improvement scenarios</div>
+              </div>
+            </div>
+
+            <!-- Step 4: Pending -->
+            <div class="step-row">
+              <div class="step-track">
+                <div class="step-icon-wrap pending">
+                  <!-- Chart icon -->
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                    <line x1="2" y1="20" x2="22" y2="20"/>
+                  </svg>
+                </div>
+                <div class="step-connector"></div>
+              </div>
+              <div class="step-body">
+                <div class="step-top">
+                  <span class="step-name pending">RSRA Analysis</span>
+                  <span class="step-badge pending">Pending</span>
+                </div>
+                <div class="step-desc pending">Running Responsible Social Return Assessment</div>
+              </div>
+            </div>
+
+            <!-- Step 5: Pending -->
+            <div class="step-row">
+              <div class="step-track">
+                <div class="step-icon-wrap pending">
+                  <!-- Document icon -->
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/>
+                    <line x1="9" y1="17" x2="12" y2="17"/>
+                  </svg>
+                </div>
+                <!-- no connector after last step -->
+              </div>
+              <div class="step-body">
+                <div class="step-top">
+                  <span class="step-name pending">Report Generation</span>
+                  <span class="step-badge pending">Pending</span>
+                </div>
+                <div class="step-desc pending">Compiling assessment artifact</div>
+              </div>
+            </div>
+
+          </div><!-- /pipeline-steps -->
+        </div><!-- /pipeline-wrap -->
+
+      </div><!-- /state-panel A -->
+
+
+      <!-- ===== STATE B ===== -->
+      <div class="state-panel" id="panel-b">
+
+        <!-- Asset Header -->
+        <div class="asset-header">
+          <div class="asset-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M9 22V12h6v10M9 7h.01M15 7h.01M9 11h.01M15 11h.01"/>
+            </svg>
+          </div>
+          <div class="asset-info">
+            <div class="asset-name">Meridian Tower</div>
+            <div class="asset-addr">1200 Bay Street, Toronto, ON · Office · 48 floors</div>
+          </div>
+          <div class="asset-status processing">
+            <div class="status-pulse"></div>
+            Processing
+          </div>
+        </div>
+
+        <div class="pipeline-wrap">
+          <div class="pipeline-steps">
+
+            <!-- Step 1: Done -->
+            <div class="step-row">
+              <div class="step-track">
+                <div class="step-icon-wrap done">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="step-connector filled"></div>
+              </div>
+              <div class="step-body">
+                <div class="step-top">
+                  <span class="step-name done">Soapbox Asset</span>
+                  <span class="step-badge done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</span>
+                </div>
+                <div class="step-desc done">Asset record created in Soapbox — ID #MTW-2024-031</div>
+              </div>
+            </div>
+
+            <!-- Step 2: Done -->
+            <div class="step-row">
+              <div class="step-track">
+                <div class="step-icon-wrap done">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="step-connector filled"></div>
+              </div>
+              <div class="step-body">
+                <div class="step-top">
+                  <span class="step-name done">Audette Integration</span>
+                  <span class="step-badge done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</span>
+                </div>
+                <div class="step-desc done">Audette connected — carbon baseline: 847 tCO₂e/yr</div>
+              </div>
+            </div>
+
+            <!-- Step 3: Done -->
+            <div class="step-row">
+              <div class="step-track">
+                <div class="step-icon-wrap done">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="step-connector filled"></div>
+              </div>
+              <div class="step-body">
+                <div class="step-top">
+                  <span class="step-name done">Energy Measures</span>
+                  <span class="step-badge done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</span>
+                </div>
+                <div class="step-desc done">14 retrofit scenarios modelled — 3 recommended pathways</div>
+              </div>
+            </div>
+
+            <!-- Step 4: Running + Streaming Panel -->
+            <div class="step-row">
+              <div class="step-track">
+                <div class="step-icon-wrap running">
+                  <div class="spinner"></div>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                    <line x1="2" y1="20" x2="22" y2="20"/>
+                  </svg>
+                </div>
+                <div class="step-connector partial"></div>
+              </div>
+              <div class="step-body">
+                <div class="step-top">
+                  <span class="step-name running">RSRA Analysis</span>
+                  <span class="step-badge running">
+                    <div class="badge-spinner"></div>
+                    Running...
+                  </span>
+                </div>
+                <div class="step-desc running">Running Responsible Social Return Assessment — computing impact metrics</div>
+
+                <!-- STREAMING RESULTS SUB-PANEL -->
+                <div class="streaming-panel">
+                  <div class="streaming-header">
+                    <div class="streaming-label">Streaming results</div>
+                    <div class="streaming-dots">
+                      <div class="streaming-dot"></div>
+                      <div class="streaming-dot"></div>
+                      <div class="streaming-dot"></div>
+                    </div>
+                  </div>
+
+                  <div class="metric-row">
+                    <div class="metric-name">ESG Score</div>
+                    <div class="metric-bar-wrap">
+                      <div class="metric-bar bar-green" style="animation-duration: 1.6s, 3s;"></div>
+                    </div>
+                    <div class="metric-value" style="color: var(--muted2);">68 / 100</div>
+                  </div>
+
+                  <div class="metric-row">
+                    <div class="metric-name">Carbon Baseline</div>
+                    <div class="metric-bar-wrap">
+                      <div class="metric-bar" style="animation-duration: 1.6s, 2.2s;"></div>
+                    </div>
+                    <div class="metric-value">loading…</div>
+                  </div>
+
+                  <div class="metric-row">
+                    <div class="metric-name">Retrofit ROI</div>
+                    <div class="metric-bar-wrap">
+                      <div class="metric-bar" style="animation-duration: 1.6s, 2.8s;"></div>
+                    </div>
+                    <div class="metric-value">loading…</div>
+                  </div>
+
+                  <div class="metric-row">
+                    <div class="metric-name">Social Impact</div>
+                    <div class="metric-bar-wrap">
+                      <div class="metric-bar" style="animation-duration: 1.6s, 3.4s;"></div>
+                    </div>
+                    <div class="metric-value">loading…</div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Step 5: Pending -->
+            <div class="step-row">
+              <div class="step-track">
+                <div class="step-icon-wrap pending">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/>
+                    <line x1="9" y1="17" x2="12" y2="17"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="step-body">
+                <div class="step-top">
+                  <span class="step-name pending">Report Generation</span>
+                  <span class="step-badge pending">Pending</span>
+                </div>
+                <div class="step-desc pending">Compiling assessment artifact</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div><!-- /state-panel B -->
+
+
+      <!-- ===== STATE C ===== -->
+      <div class="state-panel" id="panel-c">
+
+        <!-- Asset Header — Complete -->
+        <div class="asset-header">
+          <div class="asset-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M9 22V12h6v10M9 7h.01M15 7h.01M9 11h.01M15 11h.01"/>
+            </svg>
+          </div>
+          <div class="asset-info">
+            <div class="asset-name">Meridian Tower</div>
+            <div class="asset-addr">1200 Bay Street, Toronto, ON · Office · 48 floors</div>
+          </div>
+          <div class="asset-status complete">
+            <div class="status-pulse" style="animation: none;"></div>
+            Complete
+          </div>
+        </div>
+
+        <div class="pipeline-wrap">
+          <div class="pipeline-steps">
+
+            <!-- Step 1: Done -->
+            <div class="step-row">
+              <div class="step-track">
+                <div class="step-icon-wrap done" style="animation-delay:0s">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="step-connector filled"></div>
+              </div>
+              <div class="step-body">
+                <div class="step-top">
+                  <span class="step-name done">Soapbox Asset</span>
+                  <span class="step-badge done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</span>
+                </div>
+                <div class="step-desc done">Asset record created in Soapbox — ID #MTW-2024-031</div>
+              </div>
+            </div>
+
+            <!-- Step 2: Done -->
+            <div class="step-row">
+              <div class="step-track">
+                <div class="step-icon-wrap done" style="animation-delay:0.12s">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="step-connector filled"></div>
+              </div>
+              <div class="step-body">
+                <div class="step-top">
+                  <span class="step-name done">Audette Integration</span>
+                  <span class="step-badge done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</span>
+                </div>
+                <div class="step-desc done">Audette connected — carbon baseline: 847 tCO₂e/yr</div>
+              </div>
+            </div>
+
+            <!-- Step 3: Done -->
+            <div class="step-row">
+              <div class="step-track">
+                <div class="step-icon-wrap done" style="animation-delay:0.24s">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="step-connector filled"></div>
+              </div>
+              <div class="step-body">
+                <div class="step-top">
+                  <span class="step-name done">Energy Measures</span>
+                  <span class="step-badge done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</span>
+                </div>
+                <div class="step-desc done">14 retrofit scenarios modelled — 3 recommended pathways</div>
+              </div>
+            </div>
+
+            <!-- Step 4: Done (with revealed metrics) -->
+            <div class="step-row">
+              <div class="step-track">
+                <div class="step-icon-wrap done" style="animation-delay:0.36s">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="step-connector filled"></div>
+              </div>
+              <div class="step-body">
+                <div class="step-top">
+                  <span class="step-name done">RSRA Analysis</span>
+                  <span class="step-badge done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</span>
+                </div>
+                <div class="step-desc done">Assessment complete — 4 impact dimensions scored</div>
+
+                <!-- Resolved metrics -->
+                <div class="streaming-panel" style="border-color: rgba(34,197,94,0.2); background: rgba(34,197,94,0.04);">
+                  <div class="streaming-header">
+                    <div class="streaming-label" style="color: var(--green);">Results</div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <div class="metric-row">
+                    <div class="metric-name">ESG Score</div>
+                    <div class="metric-bar-wrap">
+                      <div class="metric-bar bar-green" style="animation: none; width: 68%; background: rgba(34,197,94,0.4);"></div>
+                    </div>
+                    <div class="metric-value" style="color: var(--green); font-weight:600">68 / 100</div>
+                  </div>
+                  <div class="metric-row">
+                    <div class="metric-name">Carbon Baseline</div>
+                    <div class="metric-bar-wrap">
+                      <div class="metric-bar bar-green" style="animation: none; width: 54%; background: rgba(34,197,94,0.3);"></div>
+                    </div>
+                    <div class="metric-value" style="color: var(--white); font-weight:600">847 t</div>
+                  </div>
+                  <div class="metric-row">
+                    <div class="metric-name">Retrofit ROI</div>
+                    <div class="metric-bar-wrap">
+                      <div class="metric-bar bar-green" style="animation: none; width: 81%; background: rgba(34,197,94,0.4);"></div>
+                    </div>
+                    <div class="metric-value" style="color: var(--green); font-weight:600">8.2 yr</div>
+                  </div>
+                  <div class="metric-row">
+                    <div class="metric-name">Social Impact</div>
+                    <div class="metric-bar-wrap">
+                      <div class="metric-bar bar-green" style="animation: none; width: 72%; background: rgba(34,197,94,0.35);"></div>
+                    </div>
+                    <div class="metric-value" style="color: var(--white); font-weight:600">High</div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Step 5: Done -->
+            <div class="step-row">
+              <div class="step-track">
+                <div class="step-icon-wrap done" style="animation-delay:0.48s">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+              </div>
+              <div class="step-body">
+                <div class="step-top">
+                  <span class="step-name done">Report Generation</span>
+                  <span class="step-badge done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</span>
+                </div>
+                <div class="step-desc done">RSRA artifact compiled — 28-page PDF report ready</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- SUCCESS BANNER -->
+        <div class="success-banner">
+          <div class="success-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div class="success-text">
+            <div class="success-title">Analysis complete</div>
+            <div class="success-sub">Meridian Tower RSRA artifact is ready to view and share</div>
+          </div>
+          <a href="#" class="success-cta">
+            View RSRA Artifact
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+        </div>
+
+      </div><!-- /state-panel C -->
+
+    </div><!-- /app-content -->
+  </div><!-- /browser -->
+
+
+  <!-- ===== ANNOTATION SECTION ===== -->
+  <div class="annotation-section">
+    <div class="annotation-header">
+      <span class="annotation-label">Design Notes</span>
+      <span class="annotation-title">Animation & Interaction Spec</span>
+    </div>
+    <div class="annotation-body">
+      <div class="anno-grid">
+
+        <div class="anno-item">
+          <div class="anno-item-label">Step Transitions</div>
+          <div class="anno-item-notes">
+            <div class="anno-note"><span class="anno-arrow">→</span> Checkmark icon uses <code>pop-in</code> keyframe: scale 0.5→1.15→1.0 with cubic-bezier overshoot, 350ms</div>
+            <div class="anno-note"><span class="anno-arrow">→</span> Each step's icon animates 120ms apart when all-done state loads (staggered delay)</div>
+            <div class="anno-note"><span class="anno-arrow">→</span> Connector line fills top-to-bottom via <code>fill-down</code> keyframe, 500ms ease-out, triggered after icon pop</div>
+          </div>
+        </div>
+
+        <div class="anno-item">
+          <div class="anno-item-label">Running State</div>
+          <div class="anno-item-notes">
+            <div class="anno-note"><span class="anno-arrow">→</span> Amber pulse ring: <code>pulse-ring</code> scale 1→1.25→1, 1.4s infinite — visible "heartbeat" for stage audience</div>
+            <div class="anno-note"><span class="anno-arrow">→</span> Spinner ring on icon border: <code>spin</code> 0.9s linear infinite</div>
+            <div class="anno-note"><span class="anno-arrow">→</span> Running badge shows small inline spinner beside "Running..." text</div>
+          </div>
+        </div>
+
+        <div class="anno-item">
+          <div class="anno-item-label">Streaming Results (State B)</div>
+          <div class="anno-item-notes">
+            <div class="anno-note"><span class="anno-arrow">→</span> Sub-panel fades up 400ms after Step 4 enters running state</div>
+            <div class="anno-note"><span class="anno-arrow">→</span> Each metric row reveals with <code>metric-reveal</code>: opacity + blur(4px→0) + 4px x-shift, staggered 150ms apart</div>
+            <div class="anno-note"><span class="anno-arrow">→</span> Skeleton bars combine shimmer + <code>progress-bar</code> width animation — simulate real loading</div>
+            <div class="anno-note"><span class="anno-arrow">→</span> Dotted "Streaming results" indicator uses triple dot-pulse, offset 200ms each</div>
+          </div>
+        </div>
+
+        <div class="anno-item">
+          <div class="anno-item-label">State C — Completion</div>
+          <div class="anno-item-notes">
+            <div class="anno-note"><span class="anno-arrow">→</span> Success banner slides down with <code>banner-in</code>: translateY(-8px)→0 + scale(0.97)→1, 450ms cubic-bezier</div>
+            <div class="anno-note"><span class="anno-arrow">→</span> Streaming panel transitions: skeleton bars replaced with solid green fills and real values</div>
+            <div class="anno-note"><span class="anno-arrow">→</span> Asset header badge transitions from amber "Processing" to green "Complete"</div>
+            <div class="anno-note"><span class="anno-arrow">→</span> In live demo: state transitions driven by polling API; use CSS class swap to trigger animations</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div><!-- /annotation -->
+
+</div><!-- /page-body -->
+
+<script>
+function setTab(state) {
+  // Update tabs
+  document.querySelectorAll('.state-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + state).classList.add('active');
+
+  // Update panels — remove and re-add active class to re-trigger animations
+  document.querySelectorAll('.state-panel').forEach(p => {
+    p.classList.remove('active');
+  });
+
+  const panel = document.getElementById('panel-' + state);
+  // Force reflow so CSS animations restart when we swap back to a panel
+  void panel.offsetWidth;
+  panel.classList.add('active');
+}
+</script>
+
+</body>
+</html>
